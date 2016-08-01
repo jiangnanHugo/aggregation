@@ -1,41 +1,28 @@
-FROM ubuntu:14.04
+FROM python:2.7
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
     apt-get install -y \
-        python \
-        python-dev \
-        python-setuptools \
-        python-pip \
-        python-numpy \
-        python-scipy \
-        python-pymongo \
-        python-networkx \
-        python-yaml \
-        python-psycopg2 \
-        python-matplotlib \
-        python-shapely \
-        python-pandas \
-        python-wxgtk2.8 \
-        python-opencv \
-        supervisor \
-        mafft
+        pkg-config libfreetype6-dev \
+        mafft && \
+    rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/
+WORKDIR /usr/src/app/
 
-COPY requirements.txt /app/
+COPY requirements.txt /usr/src/app/
 
+RUN pip install supervisor
 RUN pip install -r requirements.txt
 
-ADD supervisord.conf /etc/supervisor/conf.d/cron.conf
+COPY supervisord.conf /etc/supervisor/conf.d/cron.conf
 
-ADD . /app/
+RUN mkdir -p /etc/cron.d/
+RUN ln -s /usr/src/app/config/crontab /etc/cron.d/aggregation
+RUN ln -s /usr/src/app /app
 
-RUN pip install .
-
-RUN ln -s /app/config/crontab /etc/cron.d/aggregation
+COPY . /usr/src/app/
 
 EXPOSE 5000
 
-ENTRYPOINT ["/app/start.sh"]
+ENTRYPOINT ["/usr/src/app/start.sh"]
